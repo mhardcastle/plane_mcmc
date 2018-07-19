@@ -4,33 +4,44 @@ import corner
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+from scipy.stats import halfcauchy
 
 from jet_fn import f
 from parametric_lf import lf
 from parametric_generate import Data
+from estimation import find_mode
+
+def width_prior(width, prior_scale):
+    """
+    Sets a halfcauchy prior with scale `prior_scale` by returnin the logprob for a given input width.
+    Will return -np.inf for negative widths
+    """
+    return halfcauchy.logpdf(width, scale=prior_scale)
 
 class Likefn(object):
-    def __init__(self,filename,fudgefactor=1):
+    def __init__(self, filename, width_prior_scale=10.):
         self.data = Data(*np.load(filename))
         self.xd = self.data.x
         self.yd = self.data.y
         self.xderr = self.data.xerr
         self.yderr = self.data.yerr
-        self.fudgefactor=fudgefactor
+        self.variance_prior_scale = width_prior_scale
+        self.ndim = 7
 
     def set_range(self,rmin,rmax):
         self.rmin=rmin
         self.rmax=rmax
         
     def lnlike(self,X):
-        return lf(self.xd,self.yd,self.xderr*self.fudgefactor, self.yderr*self.fudgefactor,X)
+        return lf(self.xd,self.yd,self.xderr, self.yderr, X)
 
     def lnprior(self,X):
         # use global rmin, rmax for range
-        for i,v in enumerate(X):
+        for i,v in enumerate(X[:-1]):
             if v<self.rmin[i] or v>self.rmax[i]:
                 return -np.inf
-        return 0
+        return width_prior(X[-1], self.variance_prior_scale)
+        # return 0
 
     def lnpost(self,X):
         result=self.lnprior(X)
@@ -44,7 +55,9 @@ class Likefn(object):
         for i in range(len(self.rmin)):
             pos.append(np.random.uniform(self.rmin[i],self.rmax[i],size=nwalkers))
 
-        return np.array(pos).T
+        pos.append(halfcauchy(scale=self.variance_prior_scale).rvs(size=nwalkers))
+
+        return np.asarray(pos).T
 
     def __call__(self,X):
         # make the instance callable so we can use multiprocessing
@@ -52,12 +65,11 @@ class Likefn(object):
 
 if __name__=='__main__':
 
-    lkf=Likefn('data.npy',fudgefactor=3)
+    lkf=Likefn('data.npy')
     lkf.set_range([0,0,0,-0.5,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
     nwalkers=48
     pos=lkf.initpos(nwalkers)
-    ndim=6
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lkf,threads=8)
+    sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=8)
     iterations = 2000
     burnin = 500
 
@@ -65,26 +77,24 @@ if __name__=='__main__':
         pass
 
     np.save('chain.npy',sampler.chain)
-    labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$')
-    plt.figure(figsize=(6,1.5*ndim))
-    for i in range(ndim):
-        plt.subplot(ndim,1,i+1)
+    labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$', 'line width $V$')
+    plt.figure(figsize=(6,1.5*lkf.ndim))
+    for i in range(lkf.ndim):
+        plt.subplot(lkf.ndim,1,i+1)
         plt.plot(sampler.chain[:,:,i].transpose())
         plt.ylabel(labels[i])
 
-    samples=sampler.chain[:, burnin:, :].reshape((-1, ndim))
-    fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params, labels=labels)
+    samples=sampler.chain[:, burnin:, :].reshape((-1, lkf.ndim))
+    fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params+[None], labels=labels)
 
     print(samples.shape)
-    be=[]
     me=[]
-    for i in range(ndim):
+    for i in range(lkf.ndim):
         estimate=np.mean(samples[:,i])
         print(i,estimate)
-        be.append(estimate)
         me.append(np.median(samples[:,i]))
     me=np.array(me)
-    be=np.array(be)
+    be, _ = find_mode(samples)
         
     fig, ax = plt.subplots()
 
