@@ -23,7 +23,7 @@ def lf(xd, yd, xderr, yderr, parms, size=1000):
     logsumdl = np.log(np.sum(dl))
 
     for i in range(len(xd)):
-        determinant = xderr[i]**2 + yderr[i]**2
+        determinant = (xderr[i]**2) * (yderr[i]**2)
         prefix = 2 * np.pi * np.sqrt(determinant)
         exp = ((xc-xd[i]) / xderr[i])**2.
         exp += ((yc-yd[i]) / yderr[i])**2.
