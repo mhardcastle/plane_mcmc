@@ -9,6 +9,7 @@ from scipy.stats import halfcauchy
 from jet_fn import f
 from parametric_lf import lf
 from parametric_generate import Data
+from estimation import find_mode
 
 def width_prior(width, prior_scale):
     """
@@ -87,15 +88,13 @@ if __name__=='__main__':
     fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params+[None], labels=labels)
 
     print(samples.shape)
-    be=[]
     me=[]
     for i in range(lkf.ndim):
         estimate=np.mean(samples[:,i])
         print(i,estimate)
-        be.append(estimate)
         me.append(np.median(samples[:,i]))
     me=np.array(me)
-    be=np.array(be)
+    be, _ = find_mode(samples)
         
     fig, ax = plt.subplots()
 
