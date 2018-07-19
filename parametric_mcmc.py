@@ -1,3 +1,4 @@
+from __future__ import print_function
 import emcee
 import corner
 import matplotlib.pyplot as plt
@@ -74,12 +75,12 @@ if __name__=='__main__':
     samples=sampler.chain[:, burnin:, :].reshape((-1, ndim))
     fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params, labels=labels)
 
-    print samples.shape
+    print(samples.shape)
     be=[]
     me=[]
     for i in range(ndim):
         estimate=np.mean(samples[:,i])
-        print i,estimate
+        print(i,estimate)
         be.append(estimate)
         me.append(np.median(samples[:,i]))
     me=np.array(me)
@@ -91,10 +92,10 @@ if __name__=='__main__':
     true_x, true_y = f(t, lkf.data.true_params)
     est_x, est_y = f(t, be)
     mest_x, mest_y = f(t, me)
-    print 'Truth:    ',lkf.data.true_params
-    print 'Estimate: ',be
-    print 'Median: ',be
-    print 'Random:   ',samples[0]
+    print('Truth:    ',lkf.data.true_params)
+    print('Estimate: ',be)
+    print('Median: ',be)
+    print('Random:   ',samples[0])
     
 
     ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='ro')
