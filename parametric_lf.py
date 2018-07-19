@@ -8,7 +8,8 @@ def lf(xd, yd, xderr, yderr, parms, size=1000):
     
     t=np.linspace(0,1,size)
 
-    x,y=f(t,parms)
+    x,y=f(t,parms[:-1])
+    variance = parms[-1]
 
     # find the line integral element
     dx=x[0:-1]-x[1:]
@@ -23,10 +24,10 @@ def lf(xd, yd, xderr, yderr, parms, size=1000):
     logsumdl = np.log(np.sum(dl))
 
     for i in range(len(xd)):
-        determinant = (xderr[i]**2) * (yderr[i]**2)
+        determinant = (xderr[i]**2 + variance) * (yderr[i]**2 + variance)
         prefix = 2 * np.pi * np.sqrt(determinant)
-        exp = ((xc-xd[i]) / xderr[i])**2.
-        exp += ((yc-yd[i]) / yderr[i])**2.
+        exp = (xc-xd[i])**2 / (xderr[i]**2 + variance)
+        exp += (yc-yd[i])**2 / (yderr[i]**2 + variance)
         ll += logsumexp(-exp / 2., b=dl/prefix) - logsumdl  # compute logp in log space
         # p=np.sum(np.exp(-((xc-xd[i])**2.0+(yc-yd[i])**2.0)/sigma[i])*dl)/np.sum(dl)
         # ll+=np.log(p)
