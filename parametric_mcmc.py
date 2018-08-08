@@ -67,7 +67,7 @@ if __name__=='__main__':
 
     lkf=Likefn('data.npy')
     lkf.set_range([0,0,0,-0.5,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
-    nwalkers=48
+    nwalkers=96
     pos=lkf.initpos(nwalkers)
     sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=8)
     iterations = 2000
