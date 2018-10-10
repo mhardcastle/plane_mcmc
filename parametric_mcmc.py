@@ -2,9 +2,14 @@ from __future__ import print_function
 import emcee
 import corner
 import matplotlib.pyplot as plt
+from matplotlib import rc
+rc('font',**{'family':'serif','serif':['Times'],'size':12})
+rc('text', usetex=True)
+
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import halfcauchy
+import sys
 
 from jet_fn import f
 from parametric_lf import lf
@@ -65,36 +70,45 @@ class Likefn(object):
 
 if __name__=='__main__':
 
-    lkf=Likefn('data.npy')
-    lkf.set_range([0,0,0,-0.5,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
-    nwalkers=96
-    pos=lkf.initpos(nwalkers)
-    sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=8)
     iterations = 2000
     burnin = 500
+    lkf=Likefn('data.npy')
+    lkf.set_range([0,0,0,-0.5,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
+    if len(sys.argv)==1:
+        
+        nwalkers=96
+        pos=lkf.initpos(nwalkers)
+        sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=8)
 
-    for _ in tqdm(sampler.sample(pos, iterations=iterations), total=iterations):
-        pass
+        for _ in tqdm(sampler.sample(pos, iterations=iterations), total=iterations):
+            pass
 
-    np.save('chain.npy',sampler.chain)
+        np.save('chain.npy',sampler.chain)
+        chain=sampler.chain
+    else:
+        chain=np.load('chain.npy')
     labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$', 'line width $V$')
     plt.figure(figsize=(6,1.5*lkf.ndim))
     for i in range(lkf.ndim):
         plt.subplot(lkf.ndim,1,i+1)
-        plt.plot(sampler.chain[:,:,i].transpose())
+        plt.plot(chain[:,:,i].transpose())
         plt.ylabel(labels[i])
 
-    samples=sampler.chain[:, burnin:, :].reshape((-1, lkf.ndim))
+    samples=chain[:, burnin:, :].reshape((-1, lkf.ndim))
     fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params+[None], labels=labels)
-
+    plt.savefig('corner.pdf')
+    
     print(samples.shape)
     me=[]
+    be=[]
     for i in range(lkf.ndim):
         estimate=np.mean(samples[:,i])
         print(i,estimate)
+        be.append(estimate)
         me.append(np.median(samples[:,i]))
+    be=np.array(be)
     me=np.array(me)
-    be, _ = find_mode(samples)
+    mode, _ = find_mode(samples)
         
     fig, ax = plt.subplots()
 
@@ -102,25 +116,28 @@ if __name__=='__main__':
     true_x, true_y = f(t, lkf.data.true_params)
     est_x, est_y = f(t, be)
     mest_x, mest_y = f(t, me)
+    modest_x, modest_y = f(t, mode)
     print('Truth:    ',lkf.data.true_params)
     print('Estimate: ',be)
-    print('Median: ',be)
+    print('Median: ',me)
+    print('Mode: ',mode)
     print('Random:   ',samples[0])
     
 
-    ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='ro')
-    ax.plot(est_x, est_y, 'k-', label='Bayesian estimator')
+    ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='r+')
+    ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator')
     ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator')
+    ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator')
     ax.plot(true_x, true_y, 'g--', label='truth')
-    for i in np.random.choice(samples.shape[0], size=10):
+    for i in np.random.choice(samples.shape[0], size=100):
         x,y=f(t, samples[i])
-        ax.plot(x, y, 'k-', alpha=0.2)
+        ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
 
     plt.xlim(np.min(true_x),np.max(true_x))
     plt.ylim(np.min(true_y),np.max(true_y))
     plt.legend()
-
-    fig, ax = plt.subplots()
-    ax.plot(sampler.lnprobability)
-
+    plt.axis('equal')
+    #fig, ax = plt.subplots()
+    #ax.plot(sampler.lnprobability)
+    plt.savefig('compare.pdf')
     plt.show()
