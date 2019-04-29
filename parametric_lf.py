@@ -9,17 +9,19 @@ def findmaxr(xd,yd,xderr,yderr):
     r+=3*np.max(xderr**2.0+yderr**2.0)
     return r
 
-def findt(fparms,maxr,size=1000):
+def findt(fparms,maxr,size=500):
 
     scale=1
+    tmin=0
     found=False
     while not found:
         scale*=2
-        t=np.linspace(0,scale,size)
+        t=np.linspace(tmin,scale,size)
         x,y=f(t,fparms)
         r=x**2.0+y**2.0
         index=np.argmin(r<maxr)
         if index==0:
+            tmin=scale
             continue
         return t[index]
 
