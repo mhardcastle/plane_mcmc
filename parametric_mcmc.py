@@ -1,10 +1,12 @@
 from __future__ import print_function
+import os
 import emcee
 import corner
 import matplotlib.pyplot as plt
 from matplotlib import rc
 rc('font',**{'family':'serif','serif':['Times'],'size':12})
 rc('text', usetex=True)
+from getcpus import getcpus
 
 import numpy as np
 from tqdm import tqdm
@@ -73,13 +75,14 @@ if __name__=='__main__':
 
     iterations = 2000
     burnin = 500
+    os.system("taskset -p 0xFFFFFFFF %d" % os.getpid())
     lkf=Likefn('data.npy')
-    lkf.set_range([0,0,0,-0.5,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
+    lkf.set_range([0,0,0,-1.0,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
     if len(sys.argv)==1:
         
         nwalkers=96
         pos=lkf.initpos(nwalkers)
-        sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=8)
+        sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=getcpus())
 
         for _ in tqdm(sampler.sample(pos, iterations=iterations), total=iterations):
             pass

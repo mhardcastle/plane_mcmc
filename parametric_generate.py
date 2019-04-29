@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     t=np.linspace(0,1,size)
 
-    truth = [0.8,0.2,np.pi,0.0,0.50,np.pi]
+    truth = [0.8,0.1,np.pi,-0.5,0.60,3*np.pi/4]
     x,y=f(t, truth)
 
     plt.plot(x*scale,y*scale)
