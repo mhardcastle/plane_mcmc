@@ -4,10 +4,34 @@ import numpy as np
 from scipy.misc import logsumexp
 from jet_fn import f
 
-def lf(xd, yd, xderr, yderr, parms, size=1000):
-    
-    t=np.linspace(0,1,size)
+def findmaxr(xd,yd,xderr,yderr):
+    r=np.max(xd**2.0+yd**2.0)
+    r+=3*np.max(xderr**2.0+yderr**2.0)
+    return r
 
+def findt(fparms,maxr,size=1000):
+
+    scale=1
+    found=False
+    while not found:
+        scale*=2
+        t=np.linspace(0,scale,size)
+        x,y=f(t,fparms)
+        r=x**2.0+y**2.0
+        index=np.argmin(r<maxr)
+        if index==0:
+            continue
+        return t[index]
+
+
+def lf(xd, yd, xderr, yderr, parms, size=1000,maxr=None):
+
+    if maxr is None:
+        maxr=findmaxr(xd,yd,xderr,yderr)
+        
+    tmax=findt(parms[:-1],maxr)
+    t=np.linspace(0,tmax,size)
+    #print parms[0],tmax
     x,y=f(t,parms[:-1])
     variance = parms[-1]
 
@@ -42,6 +66,9 @@ if __name__=='__main__':
     data = Data(*np.load('data.npy'))
 
     parms=data.true_params
+    parms=np.append(parms,0)
+    print parms
+                  
     # print(data.yerr)
     # print(data.xerr)
     # sigma = np.sqrt(data.xerr**2 + data.yerr**2)
