@@ -12,13 +12,18 @@ if __name__ == '__main__':
 
     from jet_fn import f
 
-    size=100
-    points=30
-    noise = 1.0/3600.0
     scale=3600.0 # degrees to arcsec
+
+    size = 100   # how many points will we generate along the line
+    points = 30  # how many will be selected at random
+    noise = 1.0  # noise in arcsec
+    noise /= scale
 
     t=np.linspace(0,1,size)
 
+    # parameters for the simulation:
+    # inclination angle, cone angle, phase, age, beta, position angle
+    
     truth = [0.8,0.1,np.pi,-0.5,0.60,3*np.pi/4]
     x,y=f(t, truth)
 
@@ -39,6 +44,7 @@ if __name__ == '__main__':
     plt.scatter(xc*scale,yc*scale,color='red')
     plt.errorbar(noisyxc*scale, noisyyc*scale, xerr=xearray*scale, yerr=yearray*scale, fmt='go')
 
+    # use any npy array to save the data
     np.save('data.npy',[noisyxc,noisyyc, xearray, yearray, truth])
 
     plt.show()

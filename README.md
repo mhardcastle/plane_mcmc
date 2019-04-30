@@ -1,7 +1,9 @@
 # plane_mcmc
-MCMC fitting to samples of 2D curves
+MCMC fitting to samples of 2D curves applied to precessing jets
 
-Code here:
+Code by Maya Horton, Martin Krause, Shaun Read, Martin Hardcastle
+
+Code in the directory:
 
 * `jet_fn.py` -- the precessing jet function to fit. Wrapper around `jetpath`
 * `jetpath.py` -- MK's jet path function

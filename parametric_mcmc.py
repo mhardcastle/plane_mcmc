@@ -73,11 +73,30 @@ class Likefn(object):
 
 if __name__=='__main__':
 
+    # work round cluster affinity bug, should have no effect elsewhere
+    os.system("taskset -p 0xFFFFFFFF %d" % os.getpid())
+
+    # set MCMC iterations and burnin, 
     iterations = 2000
     burnin = 500
-    os.system("taskset -p 0xFFFFFFFF %d" % os.getpid())
+
+    # read in the data
     lkf=Likefn('data.npy')
-    lkf.set_range([0,0,0,-1.0,0.1,0],[np.pi/2,np.pi/4,2*np.pi,0.5,0.9999,2*np.pi])
+
+    # set the priors
+    # set_range sets the minimum and maximum values for a uniform prior
+    # default values are:
+    # inclination angle: 0 -> pi/2 (aligned->plane of sky)
+    # opening angle:     0 -> pi/4
+    # phase angle:       0 -> 2pi
+    # log10(age/Myr):    -1 -> 1 (0.1 -- 10 Myr)
+    # beta (v/c):        0.1 -> 0.9999
+    # position angle:    0 -> 2pi
+    
+    lkf.set_range([0,0,0,-1.0,0.1,0],[np.pi/2,np.pi/4,2*np.pi,1.0,0.9999,2*np.pi])
+
+    # run the MCMC -- nothing below here needs to change for a particular run
+
     if len(sys.argv)==1:
         
         nwalkers=96
