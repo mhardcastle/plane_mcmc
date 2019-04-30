@@ -1,5 +1,6 @@
 # compute 'LF'
 
+from __future__ import print_function
 import numpy as np
 from scipy.misc import logsumexp
 from jet_fn import f
@@ -50,13 +51,16 @@ def lf(xd, yd, xderr, yderr, parms, size=1000,maxr=None):
     logsumdl = np.log(np.sum(dl))
 
     for i in range(len(xd)):
-        determinant = (xderr[i]**2 + variance) * (yderr[i]**2 + variance)
-        prefix = 2 * np.pi * np.sqrt(determinant)
-        exp = (xc-xd[i])**2 / (xderr[i]**2 + variance)
-        exp += (yc-yd[i])**2 / (yderr[i]**2 + variance)
+        scaledx = (xderr[i]**2 + variance)
+        scaledy = (yderr[i]**2 + variance)
+        prefix = 2 * np.pi * np.sqrt(scaledx) * np.sqrt(scaledy)
+        exp = (xc-xd[i])**2 / scaledx
+        exp += (yc-yd[i])**2 / scaledy
         ll += logsumexp(-exp / 2., b=dl/prefix) - logsumdl  # compute logp in log space
-        # p=np.sum(np.exp(-((xc-xd[i])**2.0+(yc-yd[i])**2.0)/sigma[i])*dl)/np.sum(dl)
-        # ll+=np.log(p)
+        # p=np.sum(np.exp(-((xc-xd[i])**2.0)/(2.0*scaledx)
+        #                -((yc-yd[i])**2.0)/(2.0*scaledy))
+        #         *dl/prefix)/np.sum(dl)
+        #ll+=np.log(p)
     #print ll
     return ll
 
@@ -68,15 +72,15 @@ if __name__=='__main__':
     data = Data(*np.load('data.npy'))
 
     parms=data.true_params
-    parms=np.append(parms,0)
-    print parms
+    parms=np.append(parms,(1/3600.0)**2.0)
+    print('Parameters are',parms)
                   
     # print(data.yerr)
     # print(data.xerr)
     # sigma = np.sqrt(data.xerr**2 + data.yerr**2)
     # print(lf(data.x, data.y, np.ones_like(data.x)*0.5, np.ones_like(data.y)*0.5, np.ones_like(data.x)*0.5, parms))  #
 
-    parm=np.linspace(0,3,100)
+    parm=np.linspace(0,np.pi/2,100)
     ll=np.zeros_like(parm)
     for i in range(len(parm)):
         parms[0]=parm[i]
