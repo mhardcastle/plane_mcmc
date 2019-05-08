@@ -121,12 +121,11 @@ if __name__=='__main__':
     fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params+[None], labels=labels)
     plt.savefig('corner.pdf')
     
-    print(samples.shape)
     me=[]
     be=[]
     for i in range(lkf.ndim):
         estimate=np.mean(samples[:,i])
-        print(i,estimate)
+        #print(i,estimate)
         be.append(estimate)
         me.append(np.median(samples[:,i]))
     be=np.array(be)
@@ -143,7 +142,11 @@ if __name__=='__main__':
     mest_x, mest_y = f(t, me)
     t=np.linspace(0, findt(mode,maxr=lkf.maxr), 1000)
     modest_x, modest_y = f(t, mode)
-    print('Truth:    ',lkf.data.true_params)
+
+    np.set_printoptions(precision=6,linewidth=120)
+    print('\nResults!\n')
+    print('Parameters:',' '.join(labels))
+    print('Truth:    ',np.array(lkf.data.true_params))
     print('Estimate: ',be)
     print('Median:   ',me)
     print('Mode:     ',mode)
