@@ -131,7 +131,7 @@ if __name__=='__main__':
         me.append(np.median(samples[:,i]))
     be=np.array(be)
     me=np.array(me)
-    mode, _ = find_mode(samples)
+    mode, credible = find_mode(samples)
         
     fig, ax = plt.subplots()
 
@@ -145,10 +145,13 @@ if __name__=='__main__':
     modest_x, modest_y = f(t, mode)
     print('Truth:    ',lkf.data.true_params)
     print('Estimate: ',be)
-    print('Median: ',me)
-    print('Mode: ',mode)
+    print('Median:   ',me)
+    print('Mode:     ',mode)
     print('Random:   ',samples[0])
-    
+
+    print('\nCredible intervals:')
+    print('Lower:    ',credible[0])
+    print('Upper:    ',credible[1])
 
     ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='r+')
     ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator')
