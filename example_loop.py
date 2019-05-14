@@ -23,4 +23,4 @@ for i in range(runs):
     widths.append(width)
 
 print('Mean credible interval over all runs is',np.mean(widths))
-print('Error on the mean is',np.std(widths)/np.sqrt(runs))
+print('Error on the mean is',np.std(widths)/np.sqrt(runs-1))
