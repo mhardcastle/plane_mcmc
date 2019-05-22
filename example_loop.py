@@ -10,7 +10,7 @@ from parametric_mcmc import run_mcmc, analyse_mcmc
 truth = [0.8,0.1,np.pi,-0.5,0.60,3*np.pi/4]
 
 widths=[]
-runs=3
+runs=10
 
 for i in range(runs):
     generate(points=30, truth=truth, plot=False)
