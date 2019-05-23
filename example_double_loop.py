@@ -27,9 +27,15 @@ for j in range(10,100,10):
         # Now results is a dictionary with some useful stuff in it
         width=results['Upper'][3]-results['Lower'][3]
         widths.append(width)
+        del(lkf)
+        del(chain)
+        del(results)
 
     print('----------------- Inclination angle %f ---------------' % j)
     print('Mean credible interval over all runs is',np.mean(widths))
     print('Error on the mean is',np.std(widths)/np.sqrt(runs-1))
     outfile.write('%f %f %f\n' % (j,np.mean(widths),np.std(widths)/np.sqrt(runs-1)))
+    outfile.flush()
     outfile2.write('%f %s\n' % (j,str(widths)))
+    outfile2.flush()
+    
