@@ -9,7 +9,6 @@ from parametric_mcmc import Likefn, run_mcmc, analyse_mcmc
 
 truth = [1.571,0.262,np.pi,-0.5,0.60,3*np.pi/4]
 
-widths=[]
 runs=40
 
 outfile=open('inclination-out.txt','w')
@@ -17,6 +16,7 @@ outfile2=open('widths-out.txt','w')
 
 for j in range(10,100,10):
     truth[0]=np.pi*j/180.0
+    widths=[]
     for i in range(runs):
         generate(points=30, truth=truth, plot=False)
         print('Running MCMC for iteration',i+1)

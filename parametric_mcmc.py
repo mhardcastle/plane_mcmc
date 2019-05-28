@@ -17,6 +17,7 @@ from jet_fn import f
 from parametric_lf import lf,findt,findmaxr
 from parametric_generate import Data
 from estimation import find_mode
+from multiprocessing import Pool
 
 def width_prior(width, prior_scale):
     """
@@ -91,11 +92,15 @@ def run_mcmc(filename='data.npy',iterations=2000,outname='chain.npy'):
 
     nwalkers=96
     pos=lkf.initpos(nwalkers)
-    sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,threads=getcpus())
+
+    pool=Pool()
+    sampler = emcee.EnsembleSampler(nwalkers, lkf.ndim, lkf,pool=pool)
 
     for _ in tqdm(sampler.sample(pos, iterations=iterations), total=iterations):
-        pass
-
+            pass
+    pool.terminate()
+    del(pool)
+    
     np.save(outname,sampler.chain)
     return lkf,sampler.chain
 
