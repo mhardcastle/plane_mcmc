@@ -3,22 +3,23 @@
 from __future__ import print_function
 import numpy as np
 from scipy.misc import logsumexp
-from jet_fn import f
+from jet_fn import f,cf
 
 def findmaxr(xd,yd,xderr,yderr):
     r=np.max(xd**2.0+yd**2.0)
     r+=3*np.max(xderr**2.0+yderr**2.0)
     return r
 
-def findt(fparms,maxr,size=500):
+def findt(fparms,maxr,side,size=500):
 
+    jetf=[f,cf][side]
     scale=1
     tmin=0
     found=False
     while not found:
         scale*=2
         t=np.linspace(tmin,scale,size)
-        x,y=f(t,fparms)
+        x,y=jetf(t,fparms)
         r=x**2.0+y**2.0
         index=np.argmin(r<maxr)
         if index==0:
@@ -27,15 +28,16 @@ def findt(fparms,maxr,size=500):
         return t[index]
 
 
-def lf(xd, yd, xderr, yderr, parms, size=1000,maxr=None):
+def lf(xd, yd, xderr, yderr, parms, side, size=1000,maxr=None):
 
+    jetf=[f,cf][side]
     if maxr is None:
         maxr=findmaxr(xd,yd,xderr,yderr)
         
-    tmax=findt(parms[:-1],maxr)
+    tmax=findt(parms[:-1],maxr,side)
     t=np.linspace(0,tmax,size)
     #print parms[0],tmax
-    x,y=f(t,parms[:-1])
+    x,y=jetf(t,parms[:-1])
     variance = parms[-1]
 
     # find the line integral element
@@ -84,7 +86,7 @@ if __name__=='__main__':
     ll=np.zeros_like(parm)
     for i in range(len(parm)):
         parms[0]=parm[i]
-        ll[i]=lf(data.x, data.y, data.xerr, data.yerr, parms)
+        ll[i]=lf(data.x, data.y, data.xerr, data.yerr, parms, 0)
     plt.plot(parm,ll)
     plt.show()
 
