@@ -13,7 +13,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.stats import halfcauchy
 
-from jet_fn import f
+from jet_fn import f,cf
 from parametric_lf import lf,findt,findmaxr
 from parametric_generate import Data
 from estimation import find_mode
@@ -28,12 +28,22 @@ def width_prior(width, prior_scale):
 
 class Likefn(object):
     def __init__(self, filename, width_prior_scale=10.):
-        self.data = Data(*np.load(filename))
-        self.xd = self.data.x
-        self.yd = self.data.y
-        self.xderr = self.data.xerr
-        self.yderr = self.data.yerr
-        self.maxr=findmaxr(self.xd,self.yd,self.xderr,self.yderr)
+        self.data = Data(*np.load(filename,allow_pickle=True))
+        self.cj_data = Data(*np.load('cj_'+filename,allow_pickle=True))
+        self.xd=[]
+        self.yd=[]
+        self.xderr=[]
+        self.yderr=[]
+        self.maxr=[]
+        
+        for side in range(2):
+            data=[self.data,self.cj_data][side]
+            
+            self.xd.append(data.x)
+            self.yd.append(data.y)
+            self.xderr.append(data.xerr)
+            self.yderr.append(data.yerr)
+            self.maxr.append(findmaxr(self.xd[side],self.yd[side],self.xderr[side],self.yderr[side]))
         self.variance_prior_scale = width_prior_scale
         self.ndim = 7
 
@@ -42,7 +52,10 @@ class Likefn(object):
         self.rmax=rmax
         
     def lnlike(self,X):
-        return lf(self.xd,self.yd,self.xderr, self.yderr, X, maxr=self.maxr)
+        rv=0
+        for side in range(2):
+            rv+=lf(self.xd[side],self.yd[side],self.xderr[side], self.yderr[side], X, side, maxr=self.maxr[side])
+        return rv
 
     def lnprior(self,X):
         # use global rmin, rmax for range
@@ -104,7 +117,7 @@ def run_mcmc(filename='data.npy',iterations=5000,outname='chain.npy'):
     np.save(outname,sampler.chain)
     return lkf,sampler.chain
 
-def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
+def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
     labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$', 'line width $V$')
     if do_plot:
         # Chain plots
@@ -154,25 +167,29 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
         # Plot over truth
         fig, ax = plt.subplots()
 
-        t=np.linspace(0, findt(lkf.data.true_params,maxr=lkf.maxr), 1000)
-        true_x, true_y = f(t, lkf.data.true_params)
-        t=np.linspace(0, findt(be,maxr=lkf.maxr), 1000)
-        est_x, est_y = f(t, be)
-        t=np.linspace(0, findt(me,maxr=lkf.maxr), 1000)
-        mest_x, mest_y = f(t, me)
-        t=np.linspace(0, findt(mode,maxr=lkf.maxr), 1000)
-        modest_x, modest_y = f(t, mode)
+        for side in range(2):
+            jetf=[f,cf][side]
+            t=np.linspace(0, findt(lkf.data.true_params,lkf.maxr[side],side), 1000)
+            true_x, true_y = jetf(t, lkf.data.true_params)
+            t=np.linspace(0, findt(be,lkf.maxr[side],side), 1000)
+            est_x, est_y = jetf(t, be)
+            t=np.linspace(0, findt(me,lkf.maxr[side],side), 1000)
+            mest_x, mest_y = jetf(t, me)
+            t=np.linspace(0, findt(mode,lkf.maxr[side],side), 1000)
+            modest_x, modest_y = jetf(t, mode)
 
-        ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='r+')
-        ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator')
-        ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator')
-        ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator')
-        ax.plot(true_x, true_y, 'g--', label='truth')
+            ax.errorbar(lkf.xd[side], lkf.yd[side], xerr=lkf.xderr[side], yerr=lkf.yderr[side], fmt='r+')
+            ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator' if side else None)
+            ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator' if side else None)
+            ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator' if side else None)
+            ax.plot(true_x, true_y, 'g--', label='truth' if 1-side else None, color='lime' if side else 'green')
+            
         for i in np.random.choice(samples.shape[0], size=100):
-            t=np.linspace(0, findt(samples[i],maxr=lkf.maxr), 1000)
-            x,y=f(t, samples[i])
-
-            ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
+            for side in range(2):
+                t=np.linspace(0, findt(samples[i],lkf.maxr[side],side), 1000)
+                jetf=[f,cf][side]
+                x,y=jetf(t, samples[i])
+                ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
 
         plt.xlim(np.min(true_x),np.max(true_x))
         plt.ylim(np.min(true_y),np.max(true_y))
