@@ -85,7 +85,7 @@ class Likefn(object):
         # make the instance callable so we can use multiprocessing
         return self.lnpost(X)
 
-def run_mcmc(filename='data.npy',iterations=2000,outname='chain.npy'):
+def run_mcmc(filename='data.npy',iterations=5000,outname='chain.npy'):
     os.system("taskset -p 0xFFFFFFFF %d" % os.getpid())
     lkf=Likefn(filename)
 

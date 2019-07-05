@@ -61,5 +61,5 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,outfile='data.npy',
 
 if __name__ == '__main__':
     
-    truth = [0.8,0.1,np.pi,-0.5,0.60,3*np.pi/4]
+    truth = [1.2,0.2,np.pi/2.0,-0.2,0.60,3*np.pi/4]
     generate(truth=truth, plot=True)
