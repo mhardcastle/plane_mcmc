@@ -42,7 +42,7 @@ class Likefn(object):
         self.rmax=rmax
         
     def lnlike(self,X):
-        return lf(self.xd,self.yd,self.xderr, self.yderr, X, maxr=self.maxr)
+        return lf(self.xd,self.yd,self.xderr, self.yderr, X, 0, maxr=self.maxr)
 
     def lnprior(self,X):
         # use global rmin, rmax for range
@@ -154,13 +154,13 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
         # Plot over truth
         fig, ax = plt.subplots()
 
-        t=np.linspace(0, findt(lkf.data.true_params,maxr=lkf.maxr), 1000)
+        t=np.linspace(0, findt(lkf.data.true_params,maxr=lkf.maxr,side=0), 1000)
         true_x, true_y = f(t, lkf.data.true_params)
-        t=np.linspace(0, findt(be,maxr=lkf.maxr), 1000)
+        t=np.linspace(0, findt(be,maxr=lkf.maxr,side=0), 1000)
         est_x, est_y = f(t, be)
-        t=np.linspace(0, findt(me,maxr=lkf.maxr), 1000)
+        t=np.linspace(0, findt(me,maxr=lkf.maxr,side=0), 1000)
         mest_x, mest_y = f(t, me)
-        t=np.linspace(0, findt(mode,maxr=lkf.maxr), 1000)
+        t=np.linspace(0, findt(mode,maxr=lkf.maxr,side=0), 1000)
         modest_x, modest_y = f(t, mode)
 
         ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='r+')
@@ -169,7 +169,7 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
         ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator')
         ax.plot(true_x, true_y, 'g--', label='truth')
         for i in np.random.choice(samples.shape[0], size=100):
-            t=np.linspace(0, findt(samples[i],maxr=lkf.maxr), 1000)
+            t=np.linspace(0, findt(samples[i],maxr=lkf.maxr,side=0), 1000)
             x,y=f(t, samples[i])
 
             ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
