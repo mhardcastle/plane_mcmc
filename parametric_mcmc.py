@@ -112,7 +112,8 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
             ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator' if side==lkf.sides-1 else None)
             ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator' if side==lkf.sides-1 else None)
             ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator' if side==lkf.sides-1 else None)
-            ax.plot(true_x, true_y, 'g--', label='truth' if 1-side else None, color='lime' if side else 'green')
+            if lkf.truth is not None:
+                ax.plot(true_x, true_y, 'g--', label='truth' if 1-side else None, color='lime' if side else 'green')
             
         for i in np.random.choice(samples.shape[0], size=100):
             for side in range(2):
@@ -120,8 +121,9 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
                 x,y=lkf.jetfn(side, t, samples[i])
                 ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
 
-        plt.xlim(np.min(true_x),np.max(true_x))
-        plt.ylim(np.min(true_y),np.max(true_y))
+        if lkf.truth is not None:
+            plt.xlim(np.min(true_x),np.max(true_x))
+            plt.ylim(np.min(true_y),np.max(true_y))
         plt.legend()
         plt.axis('equal')
         #fig, ax = plt.subplots()

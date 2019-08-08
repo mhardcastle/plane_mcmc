@@ -47,7 +47,7 @@ for i, f in enumerate(regions):
             dxlist.append(-dra.value)
             dylist.append(ddec.value)
 
-    errors=np.ones_like(dxlist)
+    errors=np.ones_like(dxlist)/3600.0
     lkf.add_side(dxlist,dylist,errors,errors)
 
 prior_min=[0,0,0,-1.0,0.1,0]
