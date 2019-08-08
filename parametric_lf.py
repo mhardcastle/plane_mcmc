@@ -82,11 +82,12 @@ if __name__=='__main__':
     # sigma = np.sqrt(data.xerr**2 + data.yerr**2)
     # print(lf(data.x, data.y, np.ones_like(data.x)*0.5, np.ones_like(data.y)*0.5, np.ones_like(data.x)*0.5, parms))  #
 
-    parm=np.linspace(0,np.pi/2,100)
+    parm=np.linspace(0,np.pi/2.0,100)
     ll=np.zeros_like(parm)
     for i in range(len(parm)):
         parms[0]=parm[i]
         ll[i]=lf(data.x, data.y, data.xerr, data.yerr, parms, 0)
+        print(i,parm[i],ll[i])
     plt.plot(parm,ll)
     plt.show()
 
