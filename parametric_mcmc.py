@@ -11,70 +11,13 @@ from getcpus import getcpus
 
 import numpy as np
 from tqdm import tqdm
-from scipy.stats import halfcauchy
 
-from jet_fn import f
-from parametric_lf import lf,findt,findmaxr
-from parametric_generate import Data
 from estimation import find_mode
 from multiprocessing import Pool
+from likefn import Likefn
 
-def width_prior(width, prior_scale):
-    """
-    Sets a halfcauchy prior with scale `prior_scale` by returnin the logprob for a given input width.
-    Will return -np.inf for negative widths
-    """
-    return halfcauchy.logpdf(width, scale=prior_scale)
-
-class Likefn(object):
-    def __init__(self, filename, width_prior_scale=10.):
-        self.data = Data(*np.load(filename))
-        self.xd = self.data.x
-        self.yd = self.data.y
-        self.xderr = self.data.xerr
-        self.yderr = self.data.yerr
-        self.maxr=findmaxr(self.xd,self.yd,self.xderr,self.yderr)
-        self.variance_prior_scale = width_prior_scale
-        self.ndim = 7
-
-    def set_range(self,rmin,rmax):
-        self.rmin=rmin
-        self.rmax=rmax
-        
-    def lnlike(self,X):
-        return lf(self.xd,self.yd,self.xderr, self.yderr, X, 0, maxr=self.maxr)
-
-    def lnprior(self,X):
-        # use global rmin, rmax for range
-        for i,v in enumerate(X[:-1]):
-            if v<self.rmin[i] or v>self.rmax[i]:
-                return -np.inf
-        return width_prior(X[-1], self.variance_prior_scale)
-        # return 0
-
-    def lnpost(self,X):
-        result=self.lnprior(X)
-        if result>-np.inf:
-            result+=self.lnlike(X)
-        return result
-
-    def initpos(self,nwalkers):
-        # pick nwalkers random positions in the range
-        pos=[]
-        for i in range(len(self.rmin)):
-            pos.append(np.random.uniform(self.rmin[i],self.rmax[i],size=nwalkers))
-
-        pos.append(halfcauchy(scale=self.variance_prior_scale).rvs(size=nwalkers))
-
-        return np.asarray(pos).T
-
-    def __call__(self,X):
-        # make the instance callable so we can use multiprocessing
-        return self.lnpost(X)
-
-def run_mcmc(filename='data.npy',iterations=5000,outname='chain.npy'):
+def run_mcmc(lkf,iterations=5000,outname='chain.npy'):
     os.system("taskset -p 0xFFFFFFFF %d" % os.getpid())
-    lkf=Likefn(filename)
 
     # set the priors
     # set_range sets the minimum and maximum values for a uniform prior
@@ -86,8 +29,6 @@ def run_mcmc(filename='data.npy',iterations=5000,outname='chain.npy'):
     # beta (v/c):        0.1 -> 0.9999
     # position angle:    0 -> 2pi
     
-    lkf.set_range([0,0,0,-1.0,0.1,0],[np.pi/2,np.pi/4,2*np.pi,1.0,0.9999,2*np.pi])
-
     # run the MCMC -- nothing below here needs to change for a particular run
 
     nwalkers=96
@@ -102,9 +43,9 @@ def run_mcmc(filename='data.npy',iterations=5000,outname='chain.npy'):
     del(pool)
     
     np.save(outname,sampler.chain)
-    return lkf,sampler.chain
+    return sampler.chain
 
-def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
+def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
     labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$', 'line width $V$')
     if do_plot:
         # Chain plots
@@ -117,7 +58,7 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
     samples=chain[:, burnin:, :].reshape((-1, lkf.ndim))
     if do_plot:
         # corner plot
-        fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=lkf.data.true_params+[None], labels=labels)
+        fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=list(lkf.truth)+[None] if lkf.truth is not None else None, labels=labels)
         plt.savefig('corner.pdf')
     
     me=[]
@@ -135,7 +76,8 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
         np.set_printoptions(precision=6,linewidth=120)
         print('\nResults!\n')
         print('Parameters:',' '.join(labels))
-        print('Truth:    ',np.array(lkf.data.true_params))
+        if lkf.truth is not None:
+            print('Truth:    ',np.array(lkf.truth))
         print('Estimate: ',be)
         print('Median:   ',me)
         print('Mode:     ',mode)
@@ -154,25 +96,29 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
         # Plot over truth
         fig, ax = plt.subplots()
 
-        t=np.linspace(0, findt(lkf.data.true_params,maxr=lkf.maxr,side=0), 1000)
-        true_x, true_y = f(t, lkf.data.true_params)
-        t=np.linspace(0, findt(be,maxr=lkf.maxr,side=0), 1000)
-        est_x, est_y = f(t, be)
-        t=np.linspace(0, findt(me,maxr=lkf.maxr,side=0), 1000)
-        mest_x, mest_y = f(t, me)
-        t=np.linspace(0, findt(mode,maxr=lkf.maxr,side=0), 1000)
-        modest_x, modest_y = f(t, mode)
+        for side in range(lkf.sides):
+            if lkf.truth is not None:
+                t=np.linspace(0, lkf.findt(lkf.truth,lkf.maxr[side],side), 1000)
+                true_x, true_y = lkf.jetfn(side, t, lkf.truth)
+                
+            t=np.linspace(0, lkf.findt(be,lkf.maxr[side],side), 1000)
+            est_x, est_y = lkf.jetfn(side, t, be)
+            t=np.linspace(0, lkf.findt(me,lkf.maxr[side],side), 1000)
+            mest_x, mest_y = lkf.jetfn(side, t, me)
+            t=np.linspace(0, lkf.findt(mode,lkf.maxr[side],side), 1000)
+            modest_x, modest_y = lkf.jetfn(side, t, mode)
 
-        ax.errorbar(lkf.xd, lkf.yd, xerr=lkf.xderr, yerr=lkf.yderr, fmt='r+')
-        ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator')
-        ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator')
-        ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator')
-        ax.plot(true_x, true_y, 'g--', label='truth')
+            ax.errorbar(lkf.xd[side], lkf.yd[side], xerr=lkf.xderr[side], yerr=lkf.yderr[side], fmt='r+')
+            ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator' if side==lkf.sides-1 else None)
+            ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator' if side==lkf.sides-1 else None)
+            ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator' if side==lkf.sides-1 else None)
+            ax.plot(true_x, true_y, 'g--', label='truth' if 1-side else None, color='lime' if side else 'green')
+            
         for i in np.random.choice(samples.shape[0], size=100):
-            t=np.linspace(0, findt(samples[i],maxr=lkf.maxr,side=0), 1000)
-            x,y=f(t, samples[i])
-
-            ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
+            for side in range(2):
+                t=np.linspace(0, lkf.findt(samples[i],lkf.maxr[side],side), 1000)
+                x,y=lkf.jetfn(side, t, samples[i])
+                ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
 
         plt.xlim(np.min(true_x),np.max(true_x))
         plt.ylim(np.min(true_y),np.max(true_y))
@@ -185,6 +131,10 @@ def analyse_mcmc(lkf,chain,burnin=500,do_plot=False,do_print=False):
     return results
     
 if __name__=='__main__':
-
-    lkf,chain=run_mcmc()
+    try:
+        name=sys.argv[1]
+    except IndexError:
+        name='data.pickle'
+    lkf=Likefn.load(name)
+    chain=run_mcmc(lkf)
     analyse_mcmc(lkf,chain,do_plot=True,do_print=True)

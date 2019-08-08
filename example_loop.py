@@ -10,12 +10,12 @@ from parametric_mcmc import run_mcmc, analyse_mcmc
 truth = [0.8,0.1,np.pi,-0.5,0.60,3*np.pi/4]
 
 widths=[]
-runs=10
+runs=3
 
 for i in range(runs):
-    generate(points=30, truth=truth, plot=False)
+    lkf=generate(points=30, sides=1,truth=truth, plot=False)
     print('Running MCMC for iteration',i+1)
-    lkf,chain = run_mcmc()
+    chain = run_mcmc(lkf)
     results=analyse_mcmc(lkf, chain, do_plot=False, do_print=False)
     # Now results is a dictionary with some useful stuff in it
     width=results['Upper'][3]-results['Lower'][3]

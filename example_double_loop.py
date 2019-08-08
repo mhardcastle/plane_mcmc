@@ -18,9 +18,9 @@ for j in range(10,100,10):
     truth[0]=np.pi*j/180.0
     widths=[]
     for i in range(runs):
-        generate(points=30, truth=truth, plot=False)
+        lfk=generate(points=30, truth=truth, plot=False)
         print('Running MCMC for iteration',i+1)
-        lkf,chain = run_mcmc()
+        chain = run_mcmc(lkf)
         #lkf=Likefn('data.npy')
         #chain=np.load('chain.npy')
         results=analyse_mcmc(lkf, chain, do_plot=False, do_print=False)
