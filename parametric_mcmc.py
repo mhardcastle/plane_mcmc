@@ -136,7 +136,7 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False,omit_width=Tr
                 ax.plot(true_x, true_y, 'g--', label='truth' if 1-side else None, color='lime' if side else 'green')
             
         for i in np.random.choice(samples.shape[0], size=100):
-            for side in range(2):
+            for side in range(lkf.sides):
                 t=np.linspace(0, lkf.findt(samples[i],lkf.maxr[side],side), 1000)
                 x,y=scale*lkf.jetfn(side, t, samples[i])
                 ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
