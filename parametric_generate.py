@@ -24,8 +24,11 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
 
     if plot:
         import matplotlib.pyplot as plt
+        from matplotlib import rc
+        rc('font',**{'family':'serif','serif':['Times'],'size':12})
+        rc('text', usetex=True)
 
-    out=Likefn(z=0.1) # simulated data has this redshuft
+    out=Likefn(z=0.1,name='simulated') # simulated data has this redshift
     out.truth=truth
     
     for side in range(sides):
@@ -54,6 +57,7 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
             plt.scatter(xc*scale,yc*scale,color='red')
             plt.errorbar(noisyxc*scale, noisyyc*scale, xerr=xearray*scale, yerr=yearray*scale, fmt='go')
 
+
     # put in a standard prior range
     out.set_range([0,0,0,-1.0,0.1,0],[np.pi/2,np.pi/4,2*np.pi,1.0,0.9999,2*np.pi])
 
@@ -61,6 +65,9 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
         out.save(outfile)
             
     if plot:
+        plt.axis('equal')
+        plt.xlabel('Offset (arcsec)')
+        plt.ylabel('Offset (arcsec)')
         plt.show()
 
     return out

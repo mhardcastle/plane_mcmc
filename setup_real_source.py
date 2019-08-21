@@ -24,7 +24,7 @@ if o['z'] is None:
 if o['jet'] is None:
     die('Jet region file must be defined')
 
-lkf=Likefn(z=o['z'])
+lkf=Likefn(z=o['z'],name=o['name'])
 
 if o['counterjet'] is not None:
     regions=[o['jet'],o['counterjet']]

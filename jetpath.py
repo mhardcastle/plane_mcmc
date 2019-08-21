@@ -96,7 +96,7 @@ def jetpath(t, i=1.6, psi=0.3, theta=0, pp=1, s_jet=1, beta=0.99, z=1,
         ydeg += core[0]
         zdeg += core[1]
  
-    return ydeg, zdeg
+    return np.array([ydeg, zdeg])
 
 if __name__=='__main__':
 

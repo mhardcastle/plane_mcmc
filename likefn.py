@@ -14,7 +14,7 @@ def width_prior(width, prior_scale):
     return halfcauchy.logpdf(width, scale=prior_scale)
 
 class Likefn(object):
-    def __init__(self, width_prior_scale=10., z=0.1):
+    def __init__(self, width_prior_scale=10., z=0.1,name=None):
         self.z=z
         self.sides=0
         self.xd=[]
@@ -26,6 +26,7 @@ class Likefn(object):
         self.variance_prior_scale = width_prior_scale
         self.truth=None
         self.core=None
+        self.name=name
 
     def add_side(self, xd, yd, xderr, yderr):
         '''
@@ -43,11 +44,9 @@ class Likefn(object):
         self.rmax=rmax
 
     def f(self,t,pars):
-        # cumbersome approach for demonstration purposes!
         return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=1,beta=pars[4],z=self.z,alpha=pars[5])
 
     def cf(self,t,pars):
-        # cumbersome approach for demonstration purposes!
         return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=-1,beta=pars[4],z=self.z,alpha=pars[5])
 
     def jetfn(self,side,t,pars):

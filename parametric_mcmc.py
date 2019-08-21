@@ -45,9 +45,17 @@ def run_mcmc(lkf,iterations=5000,outname='chain.npy'):
     np.save(outname,sampler.chain)
     return sampler.chain
 
-def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
+def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False,omit_width=True,plot_chain=True,do_show=True):
+    try:
+        name=lkf.name
+    except:
+        name=None
+    if name is not None:
+        prefix=name+'_'
+    else:
+        prefix=''
     labels=('Inclination angle $i$','Cone angle $\\psi$','Phase $\\theta$','$\log_{10}(p/{\\rm Myr})$','$\\beta$','Pos angle $\\alpha$', 'line width $V$')
-    if do_plot:
+    if do_plot and plot_chain:
         # Chain plots
         plt.figure(figsize=(6,1.5*lkf.ndim))
         for i in range(lkf.ndim):
@@ -56,14 +64,26 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
             plt.ylabel(labels[i])
 
     samples=chain[:, burnin:, :].reshape((-1, lkf.ndim))
+    if lkf.truth is not None:
+        truths=list(lkf.truth)
+    else:
+        truths=None
+    if omit_width:
+        dims=lkf.ndim-1
+        samples=samples[:,:dims]
+        labels=labels[:-1]
+    else:
+        dims=lkf.ndim
+        if truths is not None:
+            truths.append(None)
     if do_plot:
         # corner plot
-        fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=list(lkf.truth)+[None] if lkf.truth is not None else None, labels=labels)
-        plt.savefig('corner.pdf')
+        fig = corner.corner(samples,plot_contours=False,plot_density=True,plot_datapoints=False, truths=truths, labels=labels)
+        plt.savefig(prefix+'corner.pdf')
     
     me=[]
     be=[]
-    for i in range(lkf.ndim):
+    for i in range(dims):
         estimate=np.mean(samples[:,i])
         be.append(estimate)
         me.append(np.median(samples[:,i]))
@@ -95,20 +115,20 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
     if do_plot:
         # Plot over truth
         fig, ax = plt.subplots()
-
+        scale=3600.0
         for side in range(lkf.sides):
             if lkf.truth is not None:
                 t=np.linspace(0, lkf.findt(lkf.truth,lkf.maxr[side],side), 1000)
-                true_x, true_y = lkf.jetfn(side, t, lkf.truth)
+                true_x, true_y = scale*lkf.jetfn(side, t, lkf.truth)
                 
             t=np.linspace(0, lkf.findt(be,lkf.maxr[side],side), 1000)
-            est_x, est_y = lkf.jetfn(side, t, be)
+            est_x, est_y = scale*lkf.jetfn(side, t, be)
             t=np.linspace(0, lkf.findt(me,lkf.maxr[side],side), 1000)
-            mest_x, mest_y = lkf.jetfn(side, t, me)
+            mest_x, mest_y = scale*lkf.jetfn(side, t, me)
             t=np.linspace(0, lkf.findt(mode,lkf.maxr[side],side), 1000)
-            modest_x, modest_y = lkf.jetfn(side, t, mode)
+            modest_x, modest_y = scale*lkf.jetfn(side, t, mode)
 
-            ax.errorbar(lkf.xd[side], lkf.yd[side], xerr=lkf.xderr[side], yerr=lkf.yderr[side], fmt='r+')
+            ax.errorbar(scale*lkf.xd[side], scale*lkf.yd[side], xerr=scale*lkf.xderr[side], yerr=scale*lkf.yderr[side], fmt='r+',label='Data' if side==lkf.sides-1 else None)
             ax.plot(est_x, est_y, '-', color='magenta', label='Bayesian estimator' if side==lkf.sides-1 else None)
             ax.plot(mest_x, mest_y, '-', color='blue', label='Median estimator' if side==lkf.sides-1 else None)
             ax.plot(modest_x, modest_y, '-', color='orange', label='Mode estimator' if side==lkf.sides-1 else None)
@@ -118,7 +138,7 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
         for i in np.random.choice(samples.shape[0], size=100):
             for side in range(2):
                 t=np.linspace(0, lkf.findt(samples[i],lkf.maxr[side],side), 1000)
-                x,y=lkf.jetfn(side, t, samples[i])
+                x,y=scale*lkf.jetfn(side, t, samples[i])
                 ax.plot(x, y, 'k-', alpha=0.1,zorder=-100)
 
         if lkf.truth is not None:
@@ -126,10 +146,13 @@ def analyse_mcmc(lkf,chain,burnin=400,do_plot=False,do_print=False):
             plt.ylim(np.min(true_y),np.max(true_y))
         plt.legend()
         plt.axis('equal')
+        plt.xlabel('Offset (arcsec)')
+        plt.ylabel('Offset (arcsec)')
         #fig, ax = plt.subplots()
         #ax.plot(sampler.lnprobability)
-        plt.savefig('compare.pdf')
-        plt.show()
+        plt.savefig(prefix+'compare.pdf')
+        if do_show:
+            plt.show()
     return results
     
 if __name__=='__main__':
