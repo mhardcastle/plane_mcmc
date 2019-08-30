@@ -161,5 +161,5 @@ if __name__=='__main__':
     except IndexError:
         name='data.pickle'
     lkf=Likefn.load(name)
-    chain=run_mcmc(lkf)
+    chain=run_mcmc(lkf,outname=lkf.name+'.npy')
     analyse_mcmc(lkf,chain,do_plot=True,do_print=True)
