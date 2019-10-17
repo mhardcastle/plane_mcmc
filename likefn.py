@@ -150,12 +150,17 @@ class Likefn(object):
     def initpos(self,nwalkers):
         # pick nwalkers random positions in the range
         pos=[]
-        for i in range(len(self.rmin)):
-            pos.append(np.random.uniform(self.rmin[i],self.rmax[i],size=nwalkers))
-
-        pos.append(halfcauchy(scale=self.variance_prior_scale).rvs(size=nwalkers))
-
-        return np.asarray(pos).T
+        for i in range(nwalkers):
+            while True:
+                thispos=[]
+                for i in range(len(self.rmin)):
+                    thispos.append(np.random.uniform(self.rmin[i],self.rmax[i]))
+                    
+                thispos.append(halfcauchy(scale=self.variance_prior_scale).rvs())
+                if self.lnprior(thispos)>-np.inf:
+                    break
+            pos.append(thispos)
+        return np.asarray(pos)
 
     def __call__(self,X):
         # make the instance callable so we can use multiprocessing
