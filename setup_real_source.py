@@ -69,4 +69,7 @@ prior_max[5]=o['posangle'][1]*np.pi/180.0
 
 lkf.set_range(prior_min,prior_max)
 
+if o['anglesum'][0] is not None:
+    lkf.set_anglesum(o['anglesum'][0]*np.pi/180.0,o['anglesum'][1]*np.pi/180.0)
+
 lkf.save(o['name']+'.pickle')
