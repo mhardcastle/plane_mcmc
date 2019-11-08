@@ -26,6 +26,7 @@ class Likefn(object):
         self.variance_prior_scale = width_prior_scale
         self.truth=None
         self.core=None
+        self.doanglesum=False
         self.name=name
 
     def add_side(self, xd, yd, xderr, yderr):
@@ -38,6 +39,11 @@ class Likefn(object):
         self.yderr.append(np.array(yderr))
         self.maxr.append(self.findmaxr(self.xd[-1],self.yd[-1],self.xderr[-1],self.yderr[-1]))
         self.sides=len(self.xd)
+
+    def set_anglesum(self,amin,amax):
+        self.doanglesum=True
+        self.asmin=amin
+        self.asmax=amax
         
     def set_range(self,rmin,rmax):
         self.rmin=rmin
@@ -126,6 +132,12 @@ class Likefn(object):
         for i,v in enumerate(X[:-1]):
             if v<self.rmin[i] or v>self.rmax[i]:
                 return -np.inf
+        if self.doanglesum:
+            lsum=X[5]-X[1]
+            usum=X[5]+X[1]
+            lsum,usum=np.mod([lsum,usum],2*np.pi)
+            if lsum<self.asmin or usum>self.asmax:
+                return -np.inf
         return width_prior(X[-1], self.variance_prior_scale)
         # return 0
 
@@ -138,12 +150,17 @@ class Likefn(object):
     def initpos(self,nwalkers):
         # pick nwalkers random positions in the range
         pos=[]
-        for i in range(len(self.rmin)):
-            pos.append(np.random.uniform(self.rmin[i],self.rmax[i],size=nwalkers))
-
-        pos.append(halfcauchy(scale=self.variance_prior_scale).rvs(size=nwalkers))
-
-        return np.asarray(pos).T
+        for i in range(nwalkers):
+            while True:
+                thispos=[]
+                for i in range(len(self.rmin)):
+                    thispos.append(np.random.uniform(self.rmin[i],self.rmax[i]))
+                    
+                thispos.append(halfcauchy(scale=self.variance_prior_scale).rvs())
+                if self.lnprior(thispos)>-np.inf:
+                    break
+            pos.append(thispos)
+        return np.asarray(pos)
 
     def __call__(self,X):
         # make the instance callable so we can use multiprocessing
@@ -167,4 +184,11 @@ class Likefn(object):
         filename -- the name of a file to load
         '''
         with file(filename, 'rb') as f:
-            return pickle.load(f)
+            result=pickle.load(f)
+
+        # compatibility hack
+        try:
+            result.doanglesum
+        except AttributeError:
+            result.doanglesum=False
+        return result
