@@ -83,5 +83,5 @@ if __name__ == '__main__':
     except IndexError:
         sides=1
         
-    truth = [1.2,0.2,np.pi/2.0,-0.2,0.60,3*np.pi/4]
+    truth = [1.2,0.25,np.pi/2.0,-0.5,0.60,3*np.pi/4]
     generate(truth=truth, plot=True, sides=sides, outfile=name)
