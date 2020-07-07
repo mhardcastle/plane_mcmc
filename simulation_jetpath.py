@@ -59,7 +59,7 @@ if __name__=='__main__':
     
     x,y = jetpath(t,i=i,alpha=alpha,psi=psi,pp=pp,scale=scale)
     plt.plot(x,y,label='jet')
-    o=np.load('/beegfs/car/mayaahorton/PLUTO/problems/precessing/parameter_study/cubes/15_100_1/offsets-300-2-0.npy')
+    o=np.load('offsets-300-2-0.npy')
     # x,y = jetpath(t,i=i,alpha=alpha,psi=psi,pp=pp,scale=scale,s_jet=-1)
     # plt.plot(x,y,label='counterjet')
     # plt.legend(loc=0)

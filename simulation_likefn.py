@@ -2,7 +2,7 @@
 
 import numpy as np
 import pickle
-from jetpath import jetpath
+from simulation_jetpath import jetpath
 from scipy.misc import logsumexp
 from scipy.stats import halfcauchy
 
@@ -14,8 +14,8 @@ def width_prior(width, prior_scale):
     return halfcauchy.logpdf(width, scale=prior_scale)
 
 class Likefn(object):
-    def __init__(self, width_prior_scale=10., z=0.1,name=None):
-        self.z=z
+    def __init__(self, width_prior_scale=10.,scale=512.0/5.0, name=None):
+        self.scale=scale
         self.sides=0
         self.xd=[]
         self.yd=[]
@@ -50,13 +50,13 @@ class Likefn(object):
         self.rmax=rmax
 
     def f(self,t,pars):
-        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=1,beta=pars[4],z=self.z,alpha=pars[5])
+        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=1,v=pars[4],scale=self.scale,alpha=pars[5],)
 
     def cf(self,t,pars):
-        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=-1,beta=pars[4],z=self.z,alpha=pars[5])
+        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=-1,v=pars[4],scale=self.scale,alpha=pars[5])
 
     def jetfn(self,side,t,pars):
-        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=-1 if side==1 else 1,beta=pars[4],z=self.z,alpha=pars[5])
+        return jetpath(t,i=pars[0],psi=pars[1],theta=pars[2],pp=10**pars[3],s_jet=-1 if side==1 else 1,v=pars[4],scale=self.scale,alpha=pars[5])
     
     def findmaxr(self,xd,yd,xderr,yderr):
         r=np.max(xd**2.0+yd**2.0)
