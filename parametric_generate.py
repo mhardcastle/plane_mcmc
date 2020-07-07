@@ -25,8 +25,9 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
     if plot:
         import matplotlib.pyplot as plt
         from matplotlib import rc
-        rc('font',**{'family':'serif','serif':['Times'],'size':12})
+        rc('font',**{'family':'serif','serif':['Times'],'size':14})
         rc('text', usetex=True)
+        plt.figure(figsize=(8,8))
 
     out=Likefn(z=0.1,name='simulated') # simulated data has this redshift
     out.truth=truth
@@ -53,9 +54,9 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
         out.add_side(noisyxc,noisyyc, xearray, yearray)
         
         if plot:
-            plt.plot(x*scale,y*scale)
-            plt.scatter(xc*scale,yc*scale,color='red')
-            plt.errorbar(noisyxc*scale, noisyyc*scale, xerr=xearray*scale, yerr=yearray*scale, fmt='go')
+            plt.plot(x*scale,y*scale,label='Jet' if side==0 else 'Counterjet',color='blue' if side==0 else 'green')
+            plt.scatter(xc*scale,yc*scale,color='red',label='Sample points' if side==0 else None)
+            plt.errorbar(noisyxc*scale, noisyyc*scale, xerr=xearray*scale, yerr=yearray*scale,fmt='+',color='orange',label='Points with added noise' if side==0 else None)
 
 
     # put in a standard prior range
@@ -65,9 +66,11 @@ def generate(size=100,points=30,noise=1.0,age=1.0,truth=None,sides=1,outfile=Non
         out.save(outfile)
             
     if plot:
+        plt.legend(loc=0)
         plt.axis('equal')
         plt.xlabel('Offset (arcsec)')
         plt.ylabel('Offset (arcsec)')
+        plt.savefig('new_simulated_jet.pdf')
         plt.show()
 
     return out
@@ -84,4 +87,4 @@ if __name__ == '__main__':
         sides=1
         
     truth = [1.2,0.25,np.pi/2.0,-0.5,0.60,3*np.pi/4]
-    generate(truth=truth, plot=True, sides=sides, outfile=name)
+    generate(truth=truth, points=15, noise=2.0, plot=True, sides=sides, outfile=name)
