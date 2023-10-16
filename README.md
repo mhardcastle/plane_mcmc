@@ -19,6 +19,8 @@ It was designed to be used with 3C radio sources, particularly the `3CRR' survey
 
 FITS images for most of the named 3C sources are available at https://3crr.extragalactic.info/ and 3C 405 (Cygnus A) can be downloaded directly from https://www.extragalactic.info/~mjh/3C405.FITS 
 
+DS9 region files for Cygnus A (jet and counterjet) are provided in CygnusJetMulti.reg and CygnusCounterMulti.reg -- the core (host galaxy) is always the first entry and the so-called `primary' terminal hotspot is the final entry. See Horton 2020a and 2023 for a discussion about the issues involved in using terminal hotspots to constrain jet paths. 
+
 BIBLIOGRAPHY
 Gower et al (1982) -- Relativistic precessing jets in quasars and radio galaxies
 DOI: 10.1086/160442
